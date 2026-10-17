@@ -47,8 +47,8 @@ start_rx "$WORK/rx2.log" --wav "$WORK/after.wav" --exit-after-session
 
 wait $PHONE_PID || true
 wait $RX_PID 2>/dev/null || true
-grep -E "STATE|STREAMING|FAILED" "$WORK/phone.log" | tail -6
-grep -E "authenticated|Streaming started|SUMMARY" "$WORK/rx2.log" | tail -4
+grep -E "STATE|STREAMING|FAILED" "$WORK/phone.log" | tail -6 || true
+grep -E "authenticated|Streaming started|SUMMARY" "$WORK/rx2.log" | tail -4 || true
 
 grep -q "Reconnecting" "$WORK/phone.log" || fail "phone never entered Reconnecting"
 grep -q "STATE Streaming reconnects=[1-9]" "$WORK/phone.log" || fail "phone did not resume streaming"

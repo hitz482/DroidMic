@@ -49,7 +49,7 @@ static NTSTATUS InstallSubdevice(
     NTSTATUS status = PcNewPort(&port, PortClassId);
     if (NT_SUCCESS(status)) status = CreateMiniport(&miniport, GUID_NULL, NULL, POOL_FLAG_NON_PAGED);
     if (NT_SUCCESS(status)) status = port->Init(DeviceObject, Irp, miniport, NULL, ResourceList);
-    if (NT_SUCCESS(status)) status = PcRegisterSubdevice(DeviceObject, Name, port);
+    if (NT_SUCCESS(status)) status = PcRegisterSubdevice(DeviceObject, const_cast<PWSTR>(Name), port);
 
     if (miniport) miniport->Release();
     if (NT_SUCCESS(status))
@@ -141,16 +141,9 @@ static NTSTATUS AddDevice(_In_ PDRIVER_OBJECT DriverObject, _In_ PDEVICE_OBJECT 
                                          MAX_MINIPORTS, PORT_CLASS_DEVICE_EXTENSION_SIZE + sizeof(DROIDMIC_EXTENSION));
     if (!NT_SUCCESS(status)) return status;
 
-    /* PcAddAdapterDevice attached our FDO on top of the PDO; find it to init our extension. */
+    /* PcAddAdapterDevice just created our FDO; IoCreateDevice inserts new device
+     * objects at the head of the driver's device list. */
     PDEVICE_OBJECT fdo = DriverObject->DeviceObject;
-    while (fdo)
-    {
-        PDEVICE_OBJECT lower = IoGetLowerDeviceObject(fdo);  /* referenced */
-        bool match = lower == PhysicalDeviceObject;
-        if (lower) ObDereferenceObject(lower);
-        if (match) break;
-        fdo = fdo->NextDevice;
-    }
     if (fdo)
     {
         PDROIDMIC_EXTENSION ext = Ext(fdo);
