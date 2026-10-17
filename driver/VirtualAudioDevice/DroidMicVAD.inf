@@ -26,9 +26,9 @@ DroidMicVAD.sys = 1
 DroidMicVAD.CopyFiles = 13
 
 [Manufacturer]
-%MfgName% = DroidMic, NT$ARCH$.10.0...17763
+%MfgName% = DroidMic, NTamd64.10.0...17763
 
-[DroidMic.NT$ARCH$.10.0...17763]
+[DroidMic.NTamd64.10.0...17763]
 %DroidMicVAD.DeviceDesc% = DroidMicVAD, Root\DroidMicVAD
 
 ;---------------------------------------------------------------------------
