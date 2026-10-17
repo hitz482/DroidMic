@@ -191,7 +191,7 @@
                                 <TextBlock Text="{Binding Pin}" FontSize="44" FontFamily="Consolas" FontWeight="Bold" Foreground="{StaticResource Accent}" Margin="0,8" />
                                 <TextBlock Text="{Binding PairingExpires}" Style="{StaticResource MutedText}" />
                                 <TextBlock Style="{StaticResource MutedText}" Margin="0,10,0,0">
-                                    <Run Text="PC identity code: " /><Run Text="{Binding Fingerprint}" FontFamily="Consolas" />
+                                    <Run Text="PC identity code: " /><Run Text="{Binding Fingerprint, Mode=OneWay}" FontFamily="Consolas" />
                                 </TextBlock>
                                 <TextBlock Text="The phone shows the same code after pairing. If it differs, cancel." Style="{StaticResource MutedText}" />
                                 <Button Content="Cancel pairing" Command="{Binding ClosePairingCommand}" HorizontalAlignment="Left" Margin="0,14,0,0" />
@@ -226,7 +226,7 @@
                             <TextBlock Text="{Binding MicTitle}" FontSize="18" FontWeight="SemiBold" Margin="10,0,0,0" />
                         </StackPanel>
                         <TextBlock Text="{Binding MicDetail}" Style="{StaticResource MutedText}" />
-                        <TextBlock Style="{StaticResource MutedText}" Margin="0,8,0,0"><Run Text="Windows device name: " /><Run Text="{Binding EndpointName}" /></TextBlock>
+                        <TextBlock Style="{StaticResource MutedText}" Margin="0,8,0,0"><Run Text="Windows device name: " /><Run Text="{Binding EndpointName, Mode=OneWay}" /></TextBlock>
                         <TextBlock Text="{Binding DefaultText}" Style="{StaticResource MutedText}" Margin="0,4,0,12" />
                         <WrapPanel>
                             <Button Content="Install virtual microphone driver" Style="{StaticResource PrimaryButton}" Command="{Binding InstallDriverCommand}"
@@ -315,9 +315,9 @@
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <TextBlock FontFamily="Consolas" FontSize="12" TextWrapping="NoWrap">
-                                <Run Text="{Binding Time, StringFormat=HH:mm:ss}" Foreground="{StaticResource Muted}" />
-                                <Run Text="{Binding LevelText}" Foreground="{StaticResource Accent}" />
-                                <Run Text="{Binding Message}" />
+                                <Run Text="{Binding Time, StringFormat=HH:mm:ss, Mode=OneWay}" Foreground="{StaticResource Muted}" />
+                                <Run Text="{Binding LevelText, Mode=OneWay}" Foreground="{StaticResource Accent}" />
+                                <Run Text="{Binding Message, Mode=OneWay}" />
                             </TextBlock>
                         </DataTemplate>
                     </ListView.ItemTemplate>

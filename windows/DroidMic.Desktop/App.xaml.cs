@@ -21,6 +21,8 @@ public partial class App : Application
     private AudioHost? _host;
     private MainWindow? _window;
     private bool _trayHintShown;
+    private string? _lastUiError;
+    private DateTime _lastUiErrorAt;
 
     public AppSettings Settings { get; private set; } = new();
     public UiLogger Log { get; } = new();
@@ -42,7 +44,16 @@ public partial class App : Application
 
         DispatcherUnhandledException += (_, args) =>
         {
-            Log.Error("Unexpected error: " + args.Exception.Message);
+            // Rate-limit: a UI error that fires on every render must not flood the log
+            // (the log view itself renders new entries, which could re-trigger it).
+            string msg = args.Exception.Message;
+            var now = DateTime.UtcNow;
+            if (msg != _lastUiError || now - _lastUiErrorAt > TimeSpan.FromSeconds(10))
+            {
+                _lastUiError = msg;
+                _lastUiErrorAt = now;
+                Log.Error("Unexpected error: " + msg);
+            }
             args.Handled = true;
         };
         TaskScheduler.UnobservedTaskException += (_, args) =>
