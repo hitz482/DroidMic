@@ -14,7 +14,7 @@
 #include <stdunk.h>
 #include <ksdebug.h>
 #include <ntstrsafe.h>
-/* GUIDs from droidmic_ioctl.h are instantiated once, in guids.cpp; KS GUIDs come from ksguid.lib. */
+/* GUIDs are instantiated once, in guids.cpp. */
 #include "droidmic_ioctl.h"
 
 #define DROIDMIC_POOLTAG 'cMdD'

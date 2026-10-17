@@ -9,7 +9,7 @@ trap 'rc=$?; [ -n "${GITHUB_ACTIONS:-}" ] && echo "::error title=$(basename "$0"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WORK="$(mktemp -d)"
 RX_PID=""
-trap '[ -n "$RX_PID" ] && kill $RX_PID 2>/dev/null; rm -rf "$WORK"' EXIT
+trap '{ [ -n "$RX_PID" ] && kill $RX_PID 2>/dev/null; } || true; rm -rf "$WORK"' EXIT
 PIN=271828
 RX="$ROOT/windows/DroidMic.ReceiverCli/bin/Release/net8.0/droidmic-receiver.dll"
 dotnet build "$ROOT/windows/DroidMic.ReceiverCli" -c Release -v quiet -nologo >/dev/null
