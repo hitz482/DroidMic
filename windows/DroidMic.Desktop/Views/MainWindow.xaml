@@ -336,7 +336,13 @@
                         <TextBlock Text="Latency / stability" Style="{StaticResource Label}" />
                         <ComboBox ItemsSource="{Binding LatencyPresets}" SelectedItem="{Binding LatencyPreset}" Width="200" HorizontalAlignment="Left" Margin="0,0,0,4" />
                         <TextBlock Text="Low: 20–60 ms buffer for strong Wi-Fi. Balanced: 30–100 ms. Stable: 60–200 ms for busy networks." Style="{StaticResource MutedText}" Margin="0,0,0,12" />
-                        <CheckBox Content="Also play the phone audio on this PC's speakers (monitor)" IsChecked="{Binding MonitorOnSpeakers}" />
+                        <CheckBox Content="Send the phone audio to an output device (speakers, or a virtual cable)" IsChecked="{Binding MonitorOnSpeakers}" />
+                        <TextBlock Text="Output device" Style="{StaticResource Label}" />
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <ComboBox ItemsSource="{Binding Outputs}" SelectedItem="{Binding SelectedOutput}" DisplayMemberPath="Name" Width="380" />
+                            <Button Content="Refresh" Command="{Binding RefreshOutputsCommand}" Margin="8,0,0,0" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding OutputHint}" Style="{StaticResource MutedText}" />
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource Card}">

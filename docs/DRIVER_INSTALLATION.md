@@ -8,6 +8,19 @@ that carry an acceptable signature. That gives two separate workflows.
 > They have **not** yet been compiled with the WDK or loaded on Windows. No signed
 > driver is included. See PROGRESS.md.
 
+## 0. No driver, Secure Boot on: use a signed virtual cable
+
+If you don't want test mode, install a Microsoft-signed virtual audio cable such as
+**VB-CABLE** (https://vb-audio.com/Cable/, donationware; install it yourself, DroidMic
+does not bundle it). Then in DroidMic → **Settings**:
+
+1. Tick **Send the phone audio to an output device**.
+2. Set **Output device** to **CABLE Input**.
+3. In Discord, OBS or Windows Sound settings, choose **CABLE Output** as the microphone.
+
+This works with Secure Boot on. It costs slightly more latency (one more audio
+buffer), and the device is named "CABLE Output" instead of "DroidMic Microphone".
+
 ## 1. Developer / test installation (your own PC only)
 
 Use this for development. It requires **test-signing mode**, which weakens

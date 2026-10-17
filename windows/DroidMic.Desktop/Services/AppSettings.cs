@@ -12,6 +12,8 @@ public sealed class AppSettings
     public bool MinimizeToTray { get; set; } = true;
     public bool StartMinimized { get; set; }
     public bool MonitorOnSpeakers { get; set; }
+    /// <summary>Render endpoint for the monitor output; null = Windows default.</summary>
+    public string? MonitorDeviceId { get; set; }
     public LatencyPreset LatencyPreset { get; set; } = LatencyPreset.Balanced;
     public bool EnableDiscovery { get; set; } = true;
     public int ControlPort { get; set; } = 48110;

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
@@ -61,6 +62,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         RefreshDevices();
         RefreshEndpoint();
+        _ = RefreshOutputs();
         RefreshListening();
         _fastTimer.Start();
         _slowTimer.Start();
@@ -130,6 +132,10 @@ public sealed partial class MainViewModel : ObservableObject
     // ---- Settings --------------------------------------------------------------------
     [ObservableProperty] private LatencyPreset _latencyPreset;
     [ObservableProperty] private bool _monitorOnSpeakers;
+    [ObservableProperty] private OutputDevice? _selectedOutput;
+    [ObservableProperty] private string _outputHint = "";
+    public ObservableCollection<OutputDevice> Outputs { get; } = new();
+    private bool _loadingOutputs;
     [ObservableProperty] private bool _minimizeToTray;
     [ObservableProperty] private bool _startListeningOnLaunch;
     [ObservableProperty] private bool _enableDiscovery;
@@ -149,6 +155,37 @@ public sealed partial class MainViewModel : ObservableObject
         _host.SetMonitor(value);
         _settings.MonitorOnSpeakers = value;
         _settings.Save();
+    }
+
+    partial void OnSelectedOutputChanged(OutputDevice? value)
+    {
+        UpdateOutputHint();
+        if (_loadingOutputs) return;
+        _settings.MonitorDeviceId = value is null || value.Id.Length == 0 ? null : value.Id;
+        _settings.Save();
+        Task.Run(_host.RestartMonitor);
+    }
+
+    private void UpdateOutputHint()
+    {
+        var name = SelectedOutput?.Name ?? "";
+        OutputHint = MonitorSink.IsVirtualCable(name)
+            ? "Virtual cable selected: in Discord, OBS or Windows Sound settings, choose its other end (e.g. \"CABLE Output\") as the microphone. Keep the checkbox above ticked."
+            : "Tip: install a Microsoft-signed virtual cable such as VB-CABLE (vb-audio.com), pick \"CABLE Input\" here, and apps can use \"CABLE Output\" as a microphone, with no DroidMic driver and no Secure Boot changes.";
+    }
+
+    [RelayCommand]
+    private async Task RefreshOutputs()
+    {
+        var list = await Task.Run(() => { try { return MonitorSink.ListOutputs(); } catch (Exception) { return (IReadOnlyList<OutputDevice>)Array.Empty<OutputDevice>(); } });
+        _loadingOutputs = true;
+        Outputs.Clear();
+        var def = new OutputDevice("", "Windows default output");
+        Outputs.Add(def);
+        foreach (var o in list) Outputs.Add(o);
+        SelectedOutput = Outputs.FirstOrDefault(o => o.Id == _settings.MonitorDeviceId) ?? def;
+        _loadingOutputs = false;
+        UpdateOutputHint();
     }
 
     partial void OnMinimizeToTrayChanged(bool value) { _settings.MinimizeToTray = value; _settings.Save(); }

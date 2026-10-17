@@ -157,7 +157,7 @@ public sealed class AudioHost : ISinkStatusProvider, IAsyncDisposable
             if (_monitor is not null)
             {
                 _pump.RemoveSink(_monitor);
-                _monitor = new MonitorSink();
+                _monitor = new MonitorSink(_settings.MonitorDeviceId);
                 _pump.AddSink(_monitor);
             }
         }
@@ -195,6 +195,15 @@ public sealed class AudioHost : ISinkStatusProvider, IAsyncDisposable
         });
     }
 
+    /// <summary>Re-opens the monitor on the device chosen in settings.</summary>
+    public void RestartMonitor()
+    {
+        SetMonitor(false);
+        SetMonitor(_settings.MonitorOnSpeakers);
+    }
+
+    public string? MonitorName => _monitor?.Name;
+
     public void SetMonitor(bool enabled)
     {
         lock (_sinkLock)
@@ -204,7 +213,7 @@ public sealed class AudioHost : ISinkStatusProvider, IAsyncDisposable
             {
                 try
                 {
-                    _monitor = new MonitorSink();
+                    _monitor = new MonitorSink(_settings.MonitorDeviceId);
                     _pump.AddSink(_monitor);
                 }
                 catch (Exception ex)
