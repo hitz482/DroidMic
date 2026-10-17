@@ -54,15 +54,21 @@ Copy-Item (Join-Path $src 'DroidMicVAD.inf') $out -Force
 
 # 3. Catalog.
 $inf2cat = Find-KitTool 'Inf2Cat.exe'
-& $inf2cat "/driver:$out" '/os:10_X64' '/uselocaltime'
-if ($LASTEXITCODE) { throw 'Inf2Cat failed' }
+$catalog = Join-Path $out 'DroidMicVAD.cat'
+Remove-Item $catalog -ErrorAction SilentlyContinue
+$log = & $inf2cat "/driver:$out" '/os:10_X64' '/uselocaltime' '/verbose' 2>&1
+$log | ForEach-Object { Write-Host $_ }
+if ($LASTEXITCODE -or -not (Test-Path $catalog)) {
+    if ($env:GITHUB_ACTIONS) { $log | Where-Object { "$_".Trim() } | Select-Object -Last 40 | ForEach-Object { Write-Host "::error title=Inf2Cat::$_" } }
+    throw 'Inf2Cat did not produce DroidMicVAD.cat'
+}
 
 # 4. Test-sign the catalog with the same WDK test certificate that signed the .sys.
 $cerFile = Get-ChildItem $outDir -Filter *.cer -ErrorAction SilentlyContinue | Select-Object -First 1
 if (-not $cerFile) { throw "WDK test certificate (.cer) not found in $outDir" }
 $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 $cerFile.FullName
 $signtool = Find-KitTool 'signtool.exe'
-& $signtool sign /fd sha256 /sha1 $cert.Thumbprint /s PrivateCertStore (Join-Path $out 'DroidMicVAD.cat')
+& $signtool sign /fd sha256 /sha1 $cert.Thumbprint /s PrivateCertStore $catalog
 if ($LASTEXITCODE) { throw 'Signing the catalog failed' }
 
 Copy-Item $cerFile.FullName (Join-Path $out 'DroidMicTestCert.cer') -Force
