@@ -2,7 +2,7 @@
 # End-to-end interop test: the Android core (Kotlin, run on the JVM with a test tone)
 # streams to the Windows receiver (C#, headless) over real TCP/UDP sockets on
 # loopback. Verifies pairing, encryption and that the received WAV contains the tone.
-set -euo pipefail
+set -Eeuo pipefail
 # On CI, report the failing command as an annotation (readable without log access).
 trap 'rc=$?; [ -n "${GITHUB_ACTIONS:-}" ] && echo "::error title=$(basename "$0")::line $LINENO exit $rc: ${BASH_COMMAND//$'"'"'\n'"'"'/ }"' ERR
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
