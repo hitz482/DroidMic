@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DroidMic</string>
+    <string name="notification_channel">Microphone streaming</string>
+    <string name="notification_channel_desc">Shown while DroidMic is using the microphone</string>
+    <string name="notification_title_streaming">Microphone on: streaming to %1$s</string>
+    <string name="notification_title_connecting">Microphone on: connecting…</string>
+    <string name="notification_title_reconnecting">Microphone on: reconnecting to %1$s</string>
+    <string name="notification_text">Tap to open DroidMic</string>
+    <string name="action_stop">Stop microphone</string>
+</resources>

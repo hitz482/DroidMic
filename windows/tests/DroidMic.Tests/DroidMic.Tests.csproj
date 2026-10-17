@@ -3,6 +3,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
@@ -15,6 +16,9 @@
     <ProjectReference Include="..\..\DroidMic.Networking\DroidMic.Networking.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Compiled here too so the C#/C driver contract can be checked on any OS. -->
+    <Compile Include="..\..\DroidMic.Platform\DriverInterface.cs" Link="DriverInterface.cs" />
+    <None Include="..\..\..\driver\VirtualAudioDevice\droidmic_ioctl.h" Link="droidmic_ioctl.h" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\..\shared\protocol-spec\test-vectors.json" Link="test-vectors.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

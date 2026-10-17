@@ -167,9 +167,16 @@ class StreamSession(
 
                 val src = ensureCapture()
                 client.startStream(src.format.sampleRate, src.format.channels, src.format.frameMs)
+                var lastHeard = System.currentTimeMillis()
                 client.startReader(object : ControlListener {
-                    override fun onStats(stats: Stats) = _stats.update { it.copy(pc = stats) }
-                    override fun onRoundTrip(rttMs: Double) = _stats.update { it.copy(rttMs = rttMs) }
+                    override fun onStats(stats: Stats) {
+                        lastHeard = System.currentTimeMillis()
+                        _stats.update { it.copy(pc = stats) }
+                    }
+                    override fun onRoundTrip(rttMs: Double) {
+                        lastHeard = System.currentTimeMillis()
+                        _stats.update { it.copy(rttMs = rttMs) }
+                    }
                     override fun onClosed(reason: String, error: Throwable?) { closed.complete(reason) }
                 })
                 _stats.update { it.copy(serverName = result.serverName, fingerprint = result.fingerprint, pc = client.lastStats ?: it.pc) }
@@ -179,11 +186,13 @@ class StreamSession(
 
                 // Keep-alive until the connection drops or we are cancelled.
                 while (!closed.isCompleted) {
+                    // TCP may not notice a vanished network for minutes; the PC answers every ping.
+                    if (System.currentTimeMillis() - lastHeard > Protocol.SESSION_TIMEOUT_MS) throw IOException("No response from the PC")
                     client.sendPing(_stats.value.rttMs)
                     _stats.update { it.copy(framesSent = client.framesSent.get(), bytesSent = client.bytesSent.get(), sendErrors = client.sendErrors.get()) }
                     withTimeoutOrNull(Protocol.KEEPALIVE_INTERVAL_MS) { closed.await() }
                 }
-                throw IOException(describeClose(closed.getCompleted()))
+                throw IOException(describeClose(closed.await()))
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: AuthRejectedException) {

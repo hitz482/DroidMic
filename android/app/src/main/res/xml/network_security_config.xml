@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- DroidMic uses raw TCP/UDP sockets on the LAN with its own authenticated encryption;
+     it makes no HTTP requests, so cleartext HTTP stays disabled. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

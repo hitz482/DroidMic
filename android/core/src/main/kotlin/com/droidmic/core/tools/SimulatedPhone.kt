@@ -68,6 +68,7 @@ fun main(args: Array<String>) {
         repeat(seconds) {
             delay(1000)
             val s = session.stats.value
+            println("STATE ${session.state.value::class.simpleName} reconnects=${s.reconnects}")
             println("SENT frames=${s.framesSent} rtt=${"%.1f".format(s.rttMs)}ms pc.received=${s.pc?.received} pc.lost=${s.pc?.lost} pc.buffer=${s.pc?.bufferMs}ms peak=${"%.1f".format(session.meter.peakDb)}dBFS")
         }
         session.stop()
