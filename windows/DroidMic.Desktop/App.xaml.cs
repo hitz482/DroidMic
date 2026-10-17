@@ -51,6 +51,7 @@ public partial class App : Application
             args.SetObserved();
         };
 
+        StartUiWatchdog();
         Settings = AppSettings.Load();
         Log.Info($"DroidMic {typeof(App).Assembly.GetName().Version} starting");
         _host = new AudioHost(Settings, Log);
@@ -67,6 +68,24 @@ public partial class App : Application
 
         if (!Settings.StartMinimized || !Settings.MinimizeToTray) _window.Show();
         if (Settings.StartListeningOnLaunch) await vm.StartListening();
+    }
+
+    /// <summary>Logs when the UI thread stops responding, so "Not responding" reports come with evidence.</summary>
+    private void StartUiWatchdog()
+    {
+        var t = new Thread(() =>
+        {
+            while (true)
+            {
+                Thread.Sleep(1000);
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                var op = Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.Input);
+                if (op.Wait(TimeSpan.FromSeconds(2)) == System.Windows.Threading.DispatcherOperationStatus.Completed) continue;
+                op.Wait();
+                Log.Warn($"UI thread was blocked for {sw.Elapsed.TotalSeconds:0.0} s");
+            }
+        }) { IsBackground = true, Name = "UI watchdog" };
+        t.Start();
     }
 
     private void CreateTray()

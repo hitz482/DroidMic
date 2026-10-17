@@ -30,6 +30,8 @@ public sealed class AudioHost : ISinkStatusProvider, IAsyncDisposable
     private DriverSink? _driverSink;
     private MonitorSink? _monitor;
     private DateTime _nextDriverRetry = DateTime.MinValue;
+    // Sink changes come from the UI, the pump's failure callback and background retries.
+    private readonly object _sinkLock = new();
 
     public AudioHost(AppSettings settings, UiLogger log)
     {
@@ -88,7 +90,7 @@ public sealed class AudioHost : ISinkStatusProvider, IAsyncDisposable
             return false;
         }
         Server = server;
-        StartPump();
+        await Task.Run(StartPump);
         StateChanged?.Invoke();
         return true;
     }
@@ -123,35 +125,41 @@ public sealed class AudioHost : ISinkStatusProvider, IAsyncDisposable
 
     private void StopPump()
     {
-        _pump?.Dispose();
-        _pump = null;
-        _driverSink = null;
-        _monitor = null;
-        Mode = SinkMode.NoDriver;
+        lock (_sinkLock)
+        {
+            _pump?.Dispose();
+            _pump = null;
+            _driverSink = null;
+            _monitor = null;
+            Mode = SinkMode.NoDriver;
+        }
     }
 
     /// <summary>Makes the driver the clock master if possible, else a clocked null sink.</summary>
     private void EnsureMasterSink()
     {
-        if (_pump is null) return;
-        if (TryOpenDriver(out var sink))
+        lock (_sinkLock)
         {
-            foreach (var s in _pump.Sinks) _pump.RemoveSink(s);
-            _driverSink = sink;
-            _pump.AddSink(sink!);
-            Mode = SinkMode.VirtualMicrophone;
-            _log.Info("Feeding audio to the DroidMic Microphone endpoint");
-        }
-        else if (_pump.Sinks.Count == 0)
-        {
-            _pump.AddSink(new ClockedNullSink("No driver"));
-            Mode = SinkMode.NoDriver;
-        }
-        if (_monitor is not null)
-        {
-            _pump.RemoveSink(_monitor);
-            _monitor = new MonitorSink();
-            _pump.AddSink(_monitor);
+            if (_pump is null) return;
+            if (TryOpenDriver(out var sink))
+            {
+                foreach (var s in _pump.Sinks) _pump.RemoveSink(s);
+                _driverSink = sink;
+                _pump.AddSink(sink!);
+                Mode = SinkMode.VirtualMicrophone;
+                _log.Info("Feeding audio to the DroidMic Microphone endpoint");
+            }
+            else if (_pump.Sinks.Count == 0)
+            {
+                _pump.AddSink(new ClockedNullSink("No driver"));
+                Mode = SinkMode.NoDriver;
+            }
+            if (_monitor is not null)
+            {
+                _pump.RemoveSink(_monitor);
+                _monitor = new MonitorSink();
+                _pump.AddSink(_monitor);
+            }
         }
     }
 
@@ -179,33 +187,37 @@ public sealed class AudioHost : ISinkStatusProvider, IAsyncDisposable
     {
         if (_pump is null || Mode == SinkMode.VirtualMicrophone || DateTime.UtcNow < _nextDriverRetry) return;
         _nextDriverRetry = DateTime.UtcNow.AddSeconds(5);
-        if (DriverClient.FindInterfaces().Count > 0)
+        Task.Run(() =>
         {
+            if (DriverClient.FindInterfaces().Count == 0) return;
             EnsureMasterSink();
             StateChanged?.Invoke();
-        }
+        });
     }
 
     public void SetMonitor(bool enabled)
     {
-        if (_pump is null) return;
-        if (enabled && _monitor is null)
+        lock (_sinkLock)
         {
-            try
+            if (_pump is null) return;
+            if (enabled && _monitor is null)
             {
-                _monitor = new MonitorSink();
-                _pump.AddSink(_monitor);
+                try
+                {
+                    _monitor = new MonitorSink();
+                    _pump.AddSink(_monitor);
+                }
+                catch (Exception ex)
+                {
+                    _log.Warn("Could not open the speakers for monitoring: " + ex.Message);
+                    _monitor = null;
+                }
             }
-            catch (Exception ex)
+            else if (!enabled && _monitor is not null)
             {
-                _log.Warn("Could not open the speakers for monitoring: " + ex.Message);
+                _pump.RemoveSink(_monitor);
                 _monitor = null;
             }
-        }
-        else if (!enabled && _monitor is not null)
-        {
-            _pump.RemoveSink(_monitor);
-            _monitor = null;
         }
     }
 

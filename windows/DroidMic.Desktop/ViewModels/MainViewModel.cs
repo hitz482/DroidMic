@@ -222,7 +222,6 @@ public sealed partial class MainViewModel : ObservableObject
                 ? "No phone paired yet: open 'Pair phone' to get a PIN and QR code."
                 : "Open DroidMic on your phone and press Start Microphone.", Grey),
         };
-        RefreshAddresses();
     }
 
     // ---- Meters (50 ms) -----------------------------------------------------------------
@@ -291,14 +290,36 @@ public sealed partial class MainViewModel : ObservableObject
         AppsUsingMic = ds is { ActiveCaptureStreams: > 0 } ? "A Windows app is currently recording from DroidMic Microphone." : "No app is recording from DroidMic Microphone right now.";
 
         if (++_slowTicks % 3 == 0) RefreshEndpoint();
+        if (_slowTicks % 5 == 1) RefreshAddresses();
         if (IsPairing) RefreshPairingCountdown();
     }
 
     // ---- Microphone endpoint ------------------------------------------------------------
 
-    private void RefreshEndpoint()
+    private bool _endpointRefreshing;
+
+    /// <summary>Queries Core Audio on a worker thread: endpoint queries can block for seconds.</summary>
+    private async void RefreshEndpoint()
     {
-        var info = EndpointDetector.Detect();
+        if (_endpointRefreshing) return;
+        _endpointRefreshing = true;
+        try
+        {
+            var info = await Task.Run(EndpointDetector.Detect);
+            ApplyEndpoint(info);
+        }
+        catch (Exception ex)
+        {
+            Log.Warn("Could not query audio devices: " + ex.Message);
+        }
+        finally
+        {
+            _endpointRefreshing = false;
+        }
+    }
+
+    private void ApplyEndpoint(EndpointInfo info)
+    {
         DriverMissing = info.Availability == EndpointAvailability.NotInstalled;
         MicReady = info.Availability == EndpointAvailability.Active && _host.Mode == SinkMode.VirtualMicrophone;
         EndpointName = info.FriendlyName ?? "—";
@@ -325,7 +346,7 @@ public sealed partial class MainViewModel : ObservableObject
         SelfTestResult = "Recording 2.5 s from DroidMic Microphone…";
         try
         {
-            var r = await _host.RunSelfTestAsync();
+            var r = await Task.Run(_host.RunSelfTestAsync);
             SelfTestResult = (r.Passed ? "PASSED: " : "FAILED: ") + r.Message;
             Log.Info("Endpoint self-test " + SelfTestResult);
         }
@@ -341,7 +362,7 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void InstallDriver()
+    private async Task InstallDriver()
     {
         string dir = AppContext.BaseDirectory;
         string setup = Path.Combine(dir, "driver", "DroidMic.DriverSetup.exe");
@@ -355,7 +376,7 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             using var p = Process.Start(new ProcessStartInfo(setup, $"install \"{inf}\"") { UseShellExecute = true, Verb = "runas" });
-            p?.WaitForExit();
+            if (p is not null) await p.WaitForExitAsync();
             Log.Info($"Driver setup finished with exit code {p?.ExitCode}");
         }
         catch (System.ComponentModel.Win32Exception)
@@ -432,12 +453,27 @@ public sealed partial class MainViewModel : ObservableObject
         return img;
     }
 
-    private void RefreshAddresses()
+    private bool _addressesRefreshing;
+
+    private async void RefreshAddresses()
     {
-        LocalAddresses.Clear();
-        foreach (var a in NetworkInfo.GetLocalAddresses())
-            LocalAddresses.Add($"{a.Address}  ({a.InterfaceName})");
-        PrimaryAddress = _host.PreferredAddress()?.ToString() ?? "No network";
+        if (_addressesRefreshing) return;
+        _addressesRefreshing = true;
+        try
+        {
+            var list = await Task.Run(NetworkInfo.GetLocalAddresses);
+            var lines = list.Select(a => $"{a.Address}  ({a.InterfaceName})").ToList();
+            if (!lines.SequenceEqual(LocalAddresses))
+            {
+                LocalAddresses.Clear();
+                foreach (var l in lines) LocalAddresses.Add(l);
+            }
+            PrimaryAddress = list.Count > 0 ? list[0].Address.ToString() : "No network";
+        }
+        finally
+        {
+            _addressesRefreshing = false;
+        }
     }
 
     [RelayCommand]
@@ -475,19 +511,21 @@ public sealed partial class MainViewModel : ObservableObject
     // ---- Firewall ----------------------------------------------------------------------------
 
     [RelayCommand]
-    private void CheckFirewall()
+    private async Task CheckFirewall()
     {
-        bool rule = FirewallHelper.RuleExists();
-        bool pub = FirewallHelper.AnyPublicNetwork();
+        FirewallText = "Checking…";
+        bool rule = await Task.Run(FirewallHelper.RuleExists);
+        bool pub = await Task.Run(FirewallHelper.AnyPublicNetwork);
         FirewallText = (rule ? "Firewall rule 'DroidMic' is present (private networks)." : "No 'DroidMic' firewall rule found: Windows may block the phone.")
                        + (pub ? " Your current network is set to Public, so phones may be blocked. Set it to Private in Network settings if this is your home network." : "");
     }
 
     [RelayCommand]
-    private void AddFirewallRule()
+    private async Task AddFirewallRule()
     {
         string exe = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule!.FileName;
-        FirewallText = FirewallHelper.AddRulesElevated(exe) ? "Firewall rules added." : "Firewall rules were not added (permission declined or failed).";
+        bool ok = await Task.Run(() => FirewallHelper.AddRulesElevated(exe));
+        FirewallText = ok ? "Firewall rules added." : "Firewall rules were not added (permission declined or failed).";
     }
 
     [RelayCommand] private void OpenNetworkSettings() => WindowsShell.OpenNetworkSettings();
