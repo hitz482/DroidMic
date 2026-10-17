@@ -4,6 +4,8 @@
 # loss, keep the microphone open, and reconnect by itself using the stored pairing
 # key, without the PIN.
 set -euo pipefail
+# On CI, report the failing command as an annotation (readable without log access).
+trap 'rc=$?; [ -n "${GITHUB_ACTIONS:-}" ] && echo "::error title=$(basename "$0")::line $LINENO exit $rc: ${BASH_COMMAND//$'"'"'\n'"'"'/ }"' ERR
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WORK="$(mktemp -d)"
 RX_PID=""

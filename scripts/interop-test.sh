@@ -3,6 +3,8 @@
 # streams to the Windows receiver (C#, headless) over real TCP/UDP sockets on
 # loopback. Verifies pairing, encryption and that the received WAV contains the tone.
 set -euo pipefail
+# On CI, report the failing command as an annotation (readable without log access).
+trap 'rc=$?; [ -n "${GITHUB_ACTIONS:-}" ] && echo "::error title=$(basename "$0")::line $LINENO exit $rc: ${BASH_COMMAND//$'"'"'\n'"'"'/ }"' ERR
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WORK="$(mktemp -d)"
 trap 'kill $RX_PID 2>/dev/null || true; rm -rf "$WORK"' EXIT
