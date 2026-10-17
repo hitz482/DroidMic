@@ -1,0 +1,376 @@
+<Window x:Class="DroidMic.Desktop.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="clr-namespace:DroidMic.Desktop.Views"
+        Title="DroidMic" Width="1040" Height="720" MinWidth="820" MinHeight="560"
+        Background="{StaticResource Bg}" Icon="/Assets/droidmic.ico"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <v:LevelToCoverScaleConverter x:Key="CoverScale" />
+        <v:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
+        <v:SectionVisibilityConverter x:Key="Section" />
+
+        <!-- Level meter: gradient track with a cover scaled from the right. -->
+        <DataTemplate x:Key="MeterTemplate">
+            <Grid Height="14">
+                <Border CornerRadius="4" Background="{StaticResource MeterGradient}" />
+                <Border CornerRadius="4" Background="{StaticResource Surface2}" RenderTransformOrigin="1,0.5">
+                    <Border.RenderTransform>
+                        <ScaleTransform ScaleX="{Binding Converter={StaticResource CoverScale}}" />
+                    </Border.RenderTransform>
+                </Border>
+            </Grid>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Sidebar -->
+        <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Border}" BorderThickness="0,0,1,0">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="20,22,20,24">
+                    <Image Source="/Assets/droidmic.ico" Width="32" Height="32" />
+                    <TextBlock Text="DroidMic" FontSize="20" FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel DockPanel.Dock="Bottom" Margin="20,0,20,20">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="8" Height="8" Fill="{Binding ConnectionBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding ListeningText}" Style="{StaticResource MutedText}" Margin="8,0,0,0" />
+                    </StackPanel>
+                </StackPanel>
+                <ListBox SelectedIndex="{Binding SelectedSection}" Background="Transparent" BorderThickness="0"
+                         ItemContainerStyle="{StaticResource NavItem}" AutomationProperties.Name="Sections">
+                    <ListBoxItem>Dashboard</ListBoxItem>
+                    <ListBoxItem>Pair phone</ListBoxItem>
+                    <ListBoxItem>Microphone setup</ListBoxItem>
+                    <ListBoxItem>Paired devices</ListBoxItem>
+                    <ListBoxItem>Diagnostics</ListBoxItem>
+                    <ListBoxItem>Settings</ListBoxItem>
+                </ListBox>
+            </DockPanel>
+        </Border>
+
+        <!-- ===================== Dashboard ===================== -->
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Padding="28,24"
+                      Visibility="{Binding SelectedSection, Converter={StaticResource Section}, ConverterParameter=0}">
+            <StackPanel MaxWidth="900">
+                <TextBlock Text="Dashboard" Style="{StaticResource H1}" />
+
+                <Border Style="{StaticResource Card}" Visibility="{Binding HasStartError, Converter={StaticResource BoolToVis}}"
+                        BorderBrush="#FF6B6B">
+                    <TextBlock Text="{Binding StartError}" Foreground="#FF6B6B" />
+                </Border>
+
+                <!-- Connection -->
+                <Border Style="{StaticResource Card}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Ellipse Width="16" Height="16" Fill="{Binding ConnectionBrush}" VerticalAlignment="Top" Margin="0,6,16,0" />
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="{Binding ConnectionTitle}" FontSize="20" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding ConnectionDetail}" Style="{StaticResource MutedText}" Margin="0,4,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top">
+                            <Button Content="Start listening" Style="{StaticResource PrimaryButton}" Command="{Binding StartListeningCommand}"
+                                    Visibility="{Binding IsListening, Converter={StaticResource InverseBoolToVis}}" />
+                            <Button Content="Stop listening" Command="{Binding StopListeningCommand}"
+                                    Visibility="{Binding IsListening, Converter={StaticResource BoolToVis}}" />
+                            <Button Content="Disconnect phone" Command="{Binding DisconnectCommand}"
+                                    Visibility="{Binding IsConnected, Converter={StaticResource BoolToVis}}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Level -->
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <DockPanel>
+                            <TextBlock Text="Live input level" Style="{StaticResource H2}" />
+                            <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right" Text="{Binding LevelText}" Style="{StaticResource MutedText}" />
+                        </DockPanel>
+                        <ContentControl Content="{Binding MeterPeak}" ContentTemplate="{StaticResource MeterTemplate}" Margin="0,4,0,6"
+                                        AutomationProperties.Name="Peak level" />
+                        <ContentControl Content="{Binding MeterRms}" ContentTemplate="{StaticResource MeterTemplate}" Height="6" Opacity="0.7"
+                                        AutomationProperties.Name="Average level" />
+                        <TextBlock Text="Clipping: lower the input gain on the phone" Foreground="#FF6B6B" Margin="0,8,0,0"
+                                   Visibility="{Binding IsClipping, Converter={StaticResource BoolToVis}}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Microphone + stats -->
+                <UniformGrid Columns="2">
+                    <Border Style="{StaticResource Card}" Margin="0,0,8,16">
+                        <StackPanel>
+                            <TextBlock Text="Windows microphone" Style="{StaticResource H2}" />
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <Ellipse Width="10" Height="10" Fill="{Binding MicBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding MicTitle}" FontWeight="SemiBold" Margin="8,0,0,0" />
+                            </StackPanel>
+                            <TextBlock Text="{Binding MicDetail}" Style="{StaticResource MutedText}" />
+                            <TextBlock Text="{Binding AppsUsingMic}" Style="{StaticResource MutedText}" Margin="0,6,0,10" />
+                            <WrapPanel>
+                                <Button Content="Open Sound settings" Command="{Binding OpenSoundSettingsCommand}" />
+                                <Button Content="Set up…" Click="GoToMicSetup" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}" Margin="8,0,0,16">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition />
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition /><RowDefinition /><RowDefinition />
+                            </Grid.RowDefinitions>
+                            <StackPanel Margin="0,0,0,12">
+                                <TextBlock Text="Phone" Style="{StaticResource Label}" />
+                                <TextBlock Text="{Binding DeviceName}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="0,0,0,12">
+                                <TextBlock Text="Connection quality" Style="{StaticResource Label}" />
+                                <TextBlock Text="{Binding QualityText}" Foreground="{Binding QualityBrush}" FontWeight="SemiBold" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Margin="0,0,0,12">
+                                <TextBlock Text="Estimated latency" Style="{StaticResource Label}" />
+                                <TextBlock Text="{Binding LatencyText}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,0,12">
+                                <TextBlock Text="Packet loss" Style="{StaticResource Label}" />
+                                <TextBlock Text="{Binding LossText}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="2">
+                                <TextBlock Text="Network" Style="{StaticResource Label}" />
+                                <TextBlock Text="{Binding DeviceAddress}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="2" Grid.Column="1">
+                                <TextBlock Text="Underruns" Style="{StaticResource Label}" />
+                                <TextBlock Text="{Binding UnderrunText}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </UniformGrid>
+
+                <WrapPanel>
+                    <Button Content="Pair a new phone" Command="{Binding OpenPairingCommand}" Click="GoToPairing" />
+                    <Button Content="Copy connection details" Command="{Binding CopyConnectionDetailsCommand}" />
+                </WrapPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ===================== Pair phone ===================== -->
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Padding="28,24"
+                      Visibility="{Binding SelectedSection, Converter={StaticResource Section}, ConverterParameter=1}">
+            <StackPanel MaxWidth="900">
+                <TextBlock Text="Pair a phone" Style="{StaticResource H1}" />
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Pairing lets one phone stream to this PC. You only need to do this once per phone." Style="{StaticResource MutedText}" Margin="0,0,0,12" />
+                        <WrapPanel Visibility="{Binding IsPairing, Converter={StaticResource InverseBoolToVis}}">
+                            <Button Content="Show PIN and QR code" Style="{StaticResource PrimaryButton}" Command="{Binding OpenPairingCommand}" />
+                        </WrapPanel>
+                        <Grid Visibility="{Binding IsPairing, Converter={StaticResource BoolToVis}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border Background="White" CornerRadius="8" Padding="8" Width="240" Height="240">
+                                <Image Source="{Binding QrImage}" RenderOptions.BitmapScalingMode="NearestNeighbor" AutomationProperties.Name="Pairing QR code" />
+                            </Border>
+                            <StackPanel Grid.Column="1" Margin="24,0,0,0">
+                                <TextBlock Text="1. In DroidMic on the phone, tap Connect → Scan QR code." />
+                                <TextBlock Text="2. Or pick this PC from the list (or enter its address) and type the PIN:" Margin="0,6,0,0" />
+                                <TextBlock Text="{Binding Pin}" FontSize="44" FontFamily="Consolas" FontWeight="Bold" Foreground="{StaticResource Accent}" Margin="0,8" />
+                                <TextBlock Text="{Binding PairingExpires}" Style="{StaticResource MutedText}" />
+                                <TextBlock Style="{StaticResource MutedText}" Margin="0,10,0,0">
+                                    <Run Text="PC identity code: " /><Run Text="{Binding Fingerprint}" FontFamily="Consolas" />
+                                </TextBlock>
+                                <TextBlock Text="The phone shows the same code after pairing. If it differs, cancel." Style="{StaticResource MutedText}" />
+                                <Button Content="Cancel pairing" Command="{Binding ClosePairingCommand}" HorizontalAlignment="Left" Margin="0,14,0,0" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="This PC's addresses" Style="{StaticResource H2}" />
+                        <ItemsControl ItemsSource="{Binding LocalAddresses}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate><TextBlock Text="{Binding}" FontFamily="Consolas" Margin="0,2" /></DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Style="{StaticResource MutedText}" Margin="0,8,0,0"
+                                   Text="Phone and PC must be on the same network. Guest Wi-Fi and networks with 'client/AP isolation' block phones from reaching PCs. For USB, enable USB tethering on the phone and use the address of the 'Remote NDIS' adapter." />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ===================== Microphone setup ===================== -->
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Padding="28,24"
+                      Visibility="{Binding SelectedSection, Converter={StaticResource Section}, ConverterParameter=2}">
+            <StackPanel MaxWidth="900">
+                <TextBlock Text="Microphone setup" Style="{StaticResource H1}" />
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <Ellipse Width="12" Height="12" Fill="{Binding MicBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding MicTitle}" FontSize="18" FontWeight="SemiBold" Margin="10,0,0,0" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding MicDetail}" Style="{StaticResource MutedText}" />
+                        <TextBlock Style="{StaticResource MutedText}" Margin="0,8,0,0"><Run Text="Windows device name: " /><Run Text="{Binding EndpointName}" /></TextBlock>
+                        <TextBlock Text="{Binding DefaultText}" Style="{StaticResource MutedText}" Margin="0,4,0,12" />
+                        <WrapPanel>
+                            <Button Content="Install virtual microphone driver" Style="{StaticResource PrimaryButton}" Command="{Binding InstallDriverCommand}"
+                                    Visibility="{Binding DriverMissing, Converter={StaticResource BoolToVis}}" />
+                            <Button Content="Test the microphone endpoint" Command="{Binding RunSelfTestCommand}" IsEnabled="{Binding MicReady}" />
+                            <Button Content="Recording devices" Command="{Binding OpenRecordingDevicesCommand}" />
+                            <Button Content="Microphone privacy" Command="{Binding OpenMicPrivacyCommand}" />
+                        </WrapPanel>
+                        <TextBlock Text="{Binding SelfTestResult}" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Use DroidMic in your apps" Style="{StaticResource H2}" />
+                        <TextBlock Text="Windows: Settings → System → Sound → Input → choose 'DroidMic Microphone'. To make it the default, open Recording devices, select it and click Set Default." Margin="0,0,0,8" />
+                        <TextBlock Text="Discord: User Settings → Voice &amp; Video → Input Device → DroidMic Microphone." Margin="0,0,0,8" />
+                        <TextBlock Text="OBS Studio: Sources → + → Audio Input Capture → Device: DroidMic Microphone." Margin="0,0,0,8" />
+                        <TextBlock Text="Zoom / Teams / games: pick 'DroidMic Microphone' in the app's audio or microphone settings." Margin="0,0,0,8" />
+                        <TextBlock Text="Apps can only hear the phone while it is streaming. Otherwise the microphone records silence." Style="{StaticResource MutedText}" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ===================== Paired devices ===================== -->
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Padding="28,24"
+                      Visibility="{Binding SelectedSection, Converter={StaticResource Section}, ConverterParameter=3}">
+            <StackPanel MaxWidth="900">
+                <TextBlock Text="Paired devices" Style="{StaticResource H1}" />
+                <TextBlock Text="No phones are paired yet." Style="{StaticResource MutedText}"
+                           Visibility="{Binding HasPairedDevices, Converter={StaticResource InverseBoolToVis}}" />
+                <ItemsControl ItemsSource="{Binding PairedDevices}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource Card}" Padding="16">
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Content="Remove" Margin="0"
+                                            Command="{Binding DataContext.RevokeDeviceCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}" />
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding Details}" Style="{StaticResource MutedText}" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ===================== Diagnostics ===================== -->
+        <DockPanel Grid.Column="1" Margin="28,24"
+                   Visibility="{Binding SelectedSection, Converter={StaticResource Section}, ConverterParameter=4}">
+            <TextBlock DockPanel.Dock="Top" Text="Diagnostics" Style="{StaticResource H1}" />
+            <Border DockPanel.Dock="Top" Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition /><ColumnDefinition /><ColumnDefinition /><ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
+                    <StackPanel Margin="0,0,0,10"><TextBlock Text="Format" Style="{StaticResource Label}" /><TextBlock Text="{Binding StreamFormat}" /></StackPanel>
+                    <StackPanel Grid.Column="1"><TextBlock Text="Jitter buffer" Style="{StaticResource Label}" /><TextBlock Text="{Binding BufferText}" /></StackPanel>
+                    <StackPanel Grid.Column="2"><TextBlock Text="Network jitter" Style="{StaticResource Label}" /><TextBlock Text="{Binding JitterText}" /></StackPanel>
+                    <StackPanel Grid.Column="3"><TextBlock Text="Round trip" Style="{StaticResource Label}" /><TextBlock Text="{Binding RttText}" /></StackPanel>
+                    <StackPanel Grid.Row="1"><TextBlock Text="Throughput" Style="{StaticResource Label}" /><TextBlock Text="{Binding ThroughputText}" /></StackPanel>
+                    <StackPanel Grid.Row="1" Grid.Column="1"><TextBlock Text="Clock drift correction" Style="{StaticResource Label}" /><TextBlock Text="{Binding DriftText}" /></StackPanel>
+                    <StackPanel Grid.Row="1" Grid.Column="2"><TextBlock Text="Packet loss" Style="{StaticResource Label}" /><TextBlock Text="{Binding LossText}" /></StackPanel>
+                    <StackPanel Grid.Row="1" Grid.Column="3"><TextBlock Text="Underruns" Style="{StaticResource Label}" /><TextBlock Text="{Binding UnderrunText}" /></StackPanel>
+                </Grid>
+            </Border>
+            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                <TextBlock Text="{Binding ReceiverCounters}" Style="{StaticResource MutedText}" />
+                <TextBlock Text="{Binding DriverCounters}" Style="{StaticResource MutedText}" />
+            </StackPanel>
+            <WrapPanel DockPanel.Dock="Top">
+                <Button Content="Open log folder" Command="{Binding OpenLogFolderCommand}" />
+                <Button Content="Check firewall" Command="{Binding CheckFirewallCommand}" />
+                <Button Content="Allow DroidMic through firewall" Command="{Binding AddFirewallRuleCommand}" />
+                <Button Content="Network settings" Command="{Binding OpenNetworkSettingsCommand}" />
+            </WrapPanel>
+            <TextBlock DockPanel.Dock="Top" Text="{Binding FirewallText}" Margin="0,0,0,10" />
+            <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Border}" BorderThickness="1" CornerRadius="8">
+                <ListView ItemsSource="{Binding Logs}" Background="Transparent" BorderThickness="0" Foreground="{StaticResource Text}"
+                          v:AutoScroll.Enabled="True" AutomationProperties.Name="Log">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock FontFamily="Consolas" FontSize="12" TextWrapping="NoWrap">
+                                <Run Text="{Binding Time, StringFormat=HH:mm:ss}" Foreground="{StaticResource Muted}" />
+                                <Run Text="{Binding LevelText}" Foreground="{StaticResource Accent}" />
+                                <Run Text="{Binding Message}" />
+                            </TextBlock>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Border>
+        </DockPanel>
+
+        <!-- ===================== Settings ===================== -->
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Padding="28,24"
+                      Visibility="{Binding SelectedSection, Converter={StaticResource Section}, ConverterParameter=5}">
+            <StackPanel MaxWidth="900">
+                <TextBlock Text="Settings" Style="{StaticResource H1}" />
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Audio" Style="{StaticResource H2}" />
+                        <TextBlock Text="Latency / stability" Style="{StaticResource Label}" />
+                        <ComboBox ItemsSource="{Binding LatencyPresets}" SelectedItem="{Binding LatencyPreset}" Width="200" HorizontalAlignment="Left" Margin="0,0,0,4" />
+                        <TextBlock Text="Low: 20–60 ms buffer for strong Wi-Fi. Balanced: 30–100 ms. Stable: 60–200 ms for busy networks." Style="{StaticResource MutedText}" Margin="0,0,0,12" />
+                        <CheckBox Content="Also play the phone audio on this PC's speakers (monitor)" IsChecked="{Binding MonitorOnSpeakers}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="App" Style="{StaticResource H2}" />
+                        <CheckBox Content="Start listening when DroidMic opens" IsChecked="{Binding StartListeningOnLaunch}" />
+                        <CheckBox Content="Minimize to the system tray instead of closing" IsChecked="{Binding MinimizeToTray}" />
+                        <CheckBox Content="Let phones find this PC automatically (LAN discovery)" IsChecked="{Binding EnableDiscovery}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Network ports" Style="{StaticResource H2}" />
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Text="Control (TCP)" Style="{StaticResource Label}" />
+                                <TextBox Text="{Binding ControlPort}" Width="100" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Text="Audio (UDP)" Style="{StaticResource Label}" />
+                                <TextBox Text="{Binding AudioPort}" Width="100" />
+                            </StackPanel>
+                            <Button Content="Save" Command="{Binding SavePortsCommand}" VerticalAlignment="Bottom" Margin="0" />
+                        </StackPanel>
+                        <TextBlock Text="Discovery always uses UDP 48112. Changes apply after Stop/Start listening." Style="{StaticResource MutedText}" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Privacy" Style="{StaticResource H2}" />
+                        <TextBlock Text="DroidMic only accepts audio from phones you paired. Audio is encrypted (AES-GCM) on your local network, is never recorded or uploaded, and DroidMic collects no analytics." Style="{StaticResource MutedText}" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Window>

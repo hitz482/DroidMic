@@ -40,7 +40,7 @@ if (opts.WavPath is not null)
 }
 else
 {
-    pump.AddSink(new NullClockSink());
+    pump.AddSink(new ClockedNullSink());
 }
 
 await using var server = new DroidMicServer(new ServerOptions
@@ -105,20 +105,6 @@ internal sealed class CliSinkStatus : ISinkStatusProvider
     public string Name = "Headless receiver (no virtual microphone)";
     public string SinkName => Name;
     public bool SinkOk => true;
-}
-
-/// <summary>Discards audio, consuming it at real-time rate.</summary>
-internal sealed class NullClockSink : IAudioSink
-{
-    private readonly System.Diagnostics.Stopwatch _clock = new();
-    private long _written;
-    private int _rate;
-    public string Name => "Discard";
-    public void Open(int sampleRate) { _rate = sampleRate; _clock.Restart(); }
-    public int Write(ReadOnlySpan<short> samples) { _written += samples.Length; return samples.Length; }
-    public int QueuedSamples => (int)Math.Max(0, _written - (long)(_clock.Elapsed.TotalSeconds * _rate));
-    public void Close() { }
-    public void Dispose() { }
 }
 
 internal sealed record CliOptions(bool Pair, string? Pin, string? WavPath, string DataDir, int ControlPort, int AudioPort,
