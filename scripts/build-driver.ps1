@@ -43,8 +43,8 @@ if (-not (Test-Path "${env:ProgramFiles(x86)}\Windows Kits\10\build")) {
     throw 'The Windows Driver Kit (WDK) is not installed. See docs/BUILD_WINDOWS.md.'
 }
 
-# 1. Compile and link (the WDK test-signs DroidMicVAD.sys and writes DroidMicVAD.cer).
-& $msbuild $proj /p:Configuration=$Configuration /p:Platform=x64 /m /nologo /v:minimal
+# 1. Compile and link. Signing is done below with our own test certificate.
+& $msbuild $proj /p:Configuration=$Configuration /p:Platform=x64 /p:SignMode=Off /m /nologo /v:minimal
 if ($LASTEXITCODE) { throw 'Driver build failed' }
 
 # 2. Assemble the package.
@@ -63,15 +63,24 @@ if ($LASTEXITCODE -or -not (Test-Path $catalog)) {
     throw 'Inf2Cat did not produce DroidMicVAD.cat'
 }
 
-# 4. Test-sign the catalog with the same WDK test certificate that signed the .sys.
-$cerFile = Get-ChildItem $outDir -Filter *.cer -ErrorAction SilentlyContinue | Select-Object -First 1
-if (-not $cerFile) { throw "WDK test certificate (.cer) not found in $outDir" }
-$cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 $cerFile.FullName
+# 4. Test-sign the driver and catalog with a local self-signed "DroidMic Test" certificate
+#    (created once per machine in CurrentUser\My). Release builds are signed by Microsoft instead.
+$subject = 'CN=DroidMic Test Signing (development only)'
+$cert = Get-ChildItem Cert:\CurrentUser\My | Where-Object { $_.Subject -eq $subject -and $_.NotAfter -gt (Get-Date) } | Select-Object -First 1
+if (-not $cert) {
+    $cert = New-SelfSignedCertificate -Subject $subject -Type CodeSigningCert -CertStoreLocation Cert:\CurrentUser\My `
+        -KeyUsage DigitalSignature -KeyAlgorithm RSA -KeyLength 3072 -HashAlgorithm SHA256 -NotAfter (Get-Date).AddYears(2)
+}
 $signtool = Find-KitTool 'signtool.exe'
-& $signtool sign /fd sha256 /sha1 $cert.Thumbprint /s PrivateCertStore $catalog
-if ($LASTEXITCODE) { throw 'Signing the catalog failed' }
-
-Copy-Item $cerFile.FullName (Join-Path $out 'DroidMicTestCert.cer') -Force
+foreach ($file in @((Join-Path $out 'DroidMicVAD.sys'), $catalog)) {
+    $sig = & $signtool sign /v /fd sha256 /s My /sha1 $cert.Thumbprint $file 2>&1
+    $sig | ForEach-Object { Write-Host $_ }
+    if ($LASTEXITCODE) {
+        if ($env:GITHUB_ACTIONS) { $sig | Where-Object { "$_".Trim() } | ForEach-Object { Write-Host "::error title=signtool::$_" } }
+        throw "Signing $file failed"
+    }
+}
+Export-Certificate -Cert $cert -FilePath (Join-Path $out 'DroidMicTestCert.cer') | Out-Null
 Set-Content (Join-Path $out 'signing.txt') 'test'
 Write-Host "Driver package (TEST-SIGNED): $out"
 Get-ChildItem $out | Format-Table Name, Length

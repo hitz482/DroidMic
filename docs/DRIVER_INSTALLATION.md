@@ -19,7 +19,7 @@ Windows 11 SDK, and the matching **Windows Driver Kit** (WDK) with its Visual
 Studio extension.
 
 ```powershell
-# 1. Build (signs with an auto-generated WDK test certificate)
+# 1. Build (signs with a self-signed "DroidMic Test Signing" certificate created on first build)
 ./scripts/build-windows.ps1
 ./scripts/build-driver.ps1 -Configuration Release
 ./scripts/build-driver.ps1 -Configuration Release -VerifyOnly   # InfVerif
@@ -47,7 +47,8 @@ Remove it all again:
 ```powershell
 DroidMic.DriverSetup.exe uninstall      # removes the device node and the driver-store package
 bcdedit /set testsigning off
-certutil -delstore root "WDKTestCert <your user>"
+certutil -delstore root "DroidMic Test Signing (development only)"
+certutil -delstore TrustedPublisher "DroidMic Test Signing (development only)"
 ```
 
 Recommended while developing: enable **Driver Verifier** for `DroidMicVAD.sys`
