@@ -1,0 +1,124 @@
+;
+; DroidMic Virtual Audio Device
+; A root-enumerated WaveRT capture device that exposes the "DroidMic Microphone"
+; recording endpoint. Audio is supplied by the DroidMic desktop application.
+;
+; Install (elevated):  DroidMic.DriverSetup.exe install DroidMicVAD.inf
+; This creates the Root\DroidMicVAD device node and installs this package.
+;
+
+[Version]
+Signature   = "$Windows NT$"
+Class       = MEDIA
+ClassGuid   = {4d36e96c-e325-11ce-bfc1-08002be10318}
+Provider    = %ProviderName%
+DriverVer   = 10/17/2026,0.1.0.0
+CatalogFile = DroidMicVAD.cat
+PnpLockdown = 1
+
+[SourceDisksNames]
+1 = %DiskName%
+
+[SourceDisksFiles]
+DroidMicVAD.sys = 1
+
+[DestinationDirs]
+DroidMicVAD.CopyFiles = 13
+
+[Manufacturer]
+%MfgName% = DroidMic, NT$ARCH$.10.0...17763
+
+[DroidMic.NT$ARCH$.10.0...17763]
+%DroidMicVAD.DeviceDesc% = DroidMicVAD, Root\DroidMicVAD
+
+;---------------------------------------------------------------------------
+; Install
+;---------------------------------------------------------------------------
+
+[DroidMicVAD.NT]
+Include  = ks.inf, wdmaudio.inf
+Needs    = KS.Registration, WDMAUDIO.Registration
+CopyFiles = DroidMicVAD.CopyFiles
+AddReg   = DroidMicVAD.AddReg, DroidMicVAD.MediaCategories.AddReg
+
+[DroidMicVAD.CopyFiles]
+DroidMicVAD.sys
+
+[DroidMicVAD.AddReg]
+HKR,,AssociatedFilters,,"wdmaud,redbook"
+HKR,,Driver,,DroidMicVAD.sys
+HKR,Drivers,SubClasses,,"wave,mixer"
+HKR,Drivers\wave\wdmaud.drv,Driver,,wdmaud.drv
+HKR,Drivers\mixer\wdmaud.drv,Driver,,wdmaud.drv
+HKR,Drivers\wave\wdmaud.drv,Description,,%DroidMicVAD.DeviceDesc%
+HKR,Drivers\mixer\wdmaud.drv,Description,,%DroidMicVAD.DeviceDesc%
+
+; Gives the microphone pin (DROIDMIC_PIN_NAME_GUID) the endpoint name "DroidMic Microphone".
+[DroidMicVAD.MediaCategories.AddReg]
+HKLM,%MediaCategories%\%DroidMicPinName.GUID%,Name,,%DroidMicPinName%
+HKLM,%MediaCategories%\%DroidMicPinName.GUID%,Display,1,00,00,00,00
+
+;---------------------------------------------------------------------------
+; Interfaces
+;---------------------------------------------------------------------------
+
+[DroidMicVAD.NT.Interfaces]
+AddInterface = %KSCATEGORY_AUDIO%,    %KSNAME_Wave%,     DroidMicVAD.I.Wave
+AddInterface = %KSCATEGORY_REALTIME%, %KSNAME_Wave%,     DroidMicVAD.I.Wave
+AddInterface = %KSCATEGORY_CAPTURE%,  %KSNAME_Wave%,     DroidMicVAD.I.Wave
+AddInterface = %KSCATEGORY_AUDIO%,    %KSNAME_Topology%, DroidMicVAD.I.Topology
+AddInterface = %KSCATEGORY_TOPOLOGY%, %KSNAME_Topology%, DroidMicVAD.I.Topology
+
+[DroidMicVAD.I.Wave]
+AddReg = DroidMicVAD.I.Wave.AddReg
+
+[DroidMicVAD.I.Wave.AddReg]
+HKR,,CLSID,,%Proxy.CLSID%
+HKR,,FriendlyName,,%DroidMicVAD.Wave.szPname%
+
+[DroidMicVAD.I.Topology]
+AddReg = DroidMicVAD.I.Topology.AddReg
+
+[DroidMicVAD.I.Topology.AddReg]
+HKR,,CLSID,,%Proxy.CLSID%
+HKR,,FriendlyName,,%DroidMicVAD.Topology.szPname%
+
+;---------------------------------------------------------------------------
+; Service
+;---------------------------------------------------------------------------
+
+[DroidMicVAD.NT.Services]
+AddService = DroidMicVAD, 0x00000002, DroidMicVAD.Service
+
+[DroidMicVAD.Service]
+DisplayName   = %DroidMicVAD.SvcDesc%
+ServiceType   = 1   ; SERVICE_KERNEL_DRIVER
+StartType     = 3   ; SERVICE_DEMAND_START
+ErrorControl  = 1   ; SERVICE_ERROR_NORMAL
+ServiceBinary = %13%\DroidMicVAD.sys
+
+;---------------------------------------------------------------------------
+; Strings
+;---------------------------------------------------------------------------
+
+[Strings]
+ProviderName  = "DroidMic"
+MfgName       = "DroidMic"
+DiskName      = "DroidMic Virtual Audio Device Installation Disk"
+DroidMicVAD.DeviceDesc     = "DroidMic Virtual Audio Device"
+DroidMicVAD.SvcDesc        = "DroidMic Virtual Audio Device"
+DroidMicVAD.Wave.szPname     = "DroidMic Wave"
+DroidMicVAD.Topology.szPname = "DroidMic Microphone"
+
+DroidMicPinName.GUID = "{0244DB71-043B-4997-8E78-0662A5D13280}"
+DroidMicPinName      = "DroidMic Microphone"
+MediaCategories      = "SYSTEM\CurrentControlSet\Control\MediaCategories"
+
+KSNAME_Wave     = "WaveDroidMic"
+KSNAME_Topology = "TopologyDroidMic"
+
+Proxy.CLSID         = "{17CCA71B-ECD7-11D0-B908-00A0C9223196}"
+KSCATEGORY_AUDIO    = "{6994AD04-93EF-11D0-A3CC-00A0C9223196}"
+KSCATEGORY_CAPTURE  = "{65E8773D-8F56-11D0-A3B9-00A0C9223196}"
+KSCATEGORY_REALTIME = "{EB115FFC-10C8-4964-831D-6DCB02E6F23F}"
+KSCATEGORY_TOPOLOGY = "{DDA54A40-1E4C-11D1-A050-405705C10000}"
