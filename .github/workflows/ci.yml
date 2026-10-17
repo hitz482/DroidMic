@@ -37,7 +37,6 @@ jobs:
   android:
     name: Android APK
     runs-on: ubuntu-24.04
-    needs: core-and-interop
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -47,7 +46,7 @@ jobs:
       - uses: android-actions/setup-android@v3
       - name: Build debug APK and run unit tests
         working-directory: android
-        run: ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug --console=plain
+        run: ../scripts/ci-annotate.sh ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug --console=plain
       - uses: actions/upload-artifact@v4
         with:
           name: droidmic-android-debug-apk
@@ -61,7 +60,6 @@ jobs:
   windows:
     name: Windows app, driver and installer
     runs-on: windows-2022
-    needs: core-and-interop
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -69,17 +67,17 @@ jobs:
           dotnet-version: 8.0.x
       - uses: microsoft/setup-msbuild@v2
       - name: Desktop app and tools
-        shell: pwsh
-        run: ./scripts/build-windows.ps1 -Configuration Release
+        shell: bash
+        run: scripts/ci-annotate.sh pwsh -File scripts/build-windows.ps1 -Configuration Release
       - name: Virtual audio driver (WDK, test-signed)
-        shell: pwsh
-        run: ./scripts/build-driver.ps1 -Configuration Release
+        shell: bash
+        run: scripts/ci-annotate.sh pwsh -File scripts/build-driver.ps1 -Configuration Release
       - name: InfVerif
-        shell: pwsh
-        run: ./scripts/build-driver.ps1 -Configuration Release -VerifyOnly
+        shell: bash
+        run: scripts/ci-annotate.sh pwsh -File scripts/build-driver.ps1 -Configuration Release -VerifyOnly
       - name: Installer
-        shell: pwsh
-        run: ./scripts/package-release.ps1 -SkipBuild
+        shell: bash
+        run: scripts/ci-annotate.sh pwsh -File scripts/package-release.ps1 -SkipBuild
       - uses: actions/upload-artifact@v4
         with:
           name: droidmic-windows
