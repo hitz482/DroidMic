@@ -13,6 +13,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{9A4EF956
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DroidMic.Tests", "tests\DroidMic.Tests\DroidMic.Tests.csproj", "{0E990F26-72A5-4D88-BD40-B2583BCAA41E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DroidMic.ReceiverCli", "DroidMic.ReceiverCli\DroidMic.ReceiverCli.csproj", "{53DBF481-BBA4-4B24-947A-8ADACEE956B2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,6 +40,10 @@ Global
 		{0E990F26-72A5-4D88-BD40-B2583BCAA41E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0E990F26-72A5-4D88-BD40-B2583BCAA41E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0E990F26-72A5-4D88-BD40-B2583BCAA41E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{53DBF481-BBA4-4B24-947A-8ADACEE956B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{53DBF481-BBA4-4B24-947A-8ADACEE956B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{53DBF481-BBA4-4B24-947A-8ADACEE956B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{53DBF481-BBA4-4B24-947A-8ADACEE956B2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{0E990F26-72A5-4D88-BD40-B2583BCAA41E} = {9A4EF956-D6B6-4340-B117-BDD3C4BC4102}

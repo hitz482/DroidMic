@@ -34,13 +34,17 @@ public sealed class PairingWindow
         }
     }
 
-    public PairingInfo Open()
+    public PairingInfo Open() => OpenWith(RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6"));
+
+    /// <summary>Opens pairing with a caller-chosen PIN. Only for automated tests and the headless receiver.</summary>
+    public PairingInfo OpenWith(string pin)
     {
+        if (pin.Length != ProtocolConstants.PinLength || !pin.All(char.IsAsciiDigit))
+            throw new ArgumentException("PIN must be 6 digits", nameof(pin));
         PairingInfo info;
         lock (_lock)
         {
-            int n = RandomNumberGenerator.GetInt32(0, 1_000_000);
-            info = new PairingInfo(n.ToString("D6"), _time.GetUtcNow() + Lifetime);
+            info = new PairingInfo(pin, _time.GetUtcNow() + Lifetime);
             _current = info;
             _failures = 0;
         }
