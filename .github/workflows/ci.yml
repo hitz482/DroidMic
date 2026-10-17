@@ -43,7 +43,11 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: android-actions/setup-android@v3
+      # ubuntu runners ship the Android SDK at $ANDROID_HOME; just accept licences and add platform 35.
+      - name: Android SDK packages
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
       - name: Build debug APK and run unit tests
         working-directory: android
         run: ../scripts/ci-annotate.sh ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug --console=plain
