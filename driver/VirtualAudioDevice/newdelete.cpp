@@ -1,4 +1,5 @@
-/* Kernel-mode operator new/delete backed by ExAllocatePool2. */
+/* Kernel-mode operator new backed by ExAllocatePool2. The matching
+ * operator delete overloads are provided by the WDK headers. */
 #include "common.h"
 
 PVOID operator new(size_t size, POOL_FLAGS poolFlags, ULONG tag)
@@ -9,16 +10,4 @@ PVOID operator new(size_t size, POOL_FLAGS poolFlags, ULONG tag)
 PVOID operator new(size_t size, POOL_FLAGS poolFlags)
 {
     return ExAllocatePool2(poolFlags, size, DROIDMIC_POOLTAG);
-}
-
-/* operator delete(void*) is already provided by the WDK headers. */
-
-void __cdecl operator delete(PVOID p, size_t)
-{
-    if (p) ExFreePoolWithTag(p, DROIDMIC_POOLTAG);
-}
-
-void __cdecl operator delete[](PVOID p)
-{
-    if (p) ExFreePoolWithTag(p, DROIDMIC_POOLTAG);
 }

@@ -57,5 +57,3 @@ NTSTATUS CreateMiniportTopology(_Out_ PUNKNOWN* Unknown, _In_ REFCLSID, _In_opt_
 /* ---- Kernel C++ allocation ----------------------------------------------- */
 PVOID operator new(size_t size, POOL_FLAGS poolFlags, ULONG tag);
 PVOID operator new(size_t size, POOL_FLAGS poolFlags);
-void __cdecl operator delete(PVOID p, size_t);
-void __cdecl operator delete[](PVOID p);

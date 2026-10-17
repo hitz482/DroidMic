@@ -41,15 +41,12 @@
   <PropertyGroup>
     <!-- Test-sign during local builds; release signing is a separate, manual step (docs/DRIVER_INSTALLATION.md). -->
     <SignMode Condition="'$(SignMode)'==''">TestSign</SignMode>
-    <EnableInf2cat>true</EnableInf2cat>
-    <Inf2CatUseLocalTime>true</Inf2CatUseLocalTime>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <!-- TODO: back to true once the first WDK build is warning-free. -->
       <TreatWarningAsError>false</TreatWarningAsError>
-      <PreprocessorDefinitions>_KERNEL_MODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <!-- C4595: non-member operator new/delete may not be declared inline (portcls headers). -->
       <DisableSpecificWarnings>4595;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
@@ -77,10 +74,9 @@
     <ClInclude Include="ringbuffer.h" />
   </ItemGroup>
   <ItemGroup>
-    <Inf Include="DroidMicVAD.inf" />
-  </ItemGroup>
-  <ItemGroup>
-    <FilesToPackage Include="$(TargetPath)" />
+    <!-- Packaged (Inf2Cat + signing) by scripts/build-driver.ps1, not by the in-build
+         INF task, whose InfVerif step fails to load on some build machines. -->
+    <None Include="DroidMicVAD.inf" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

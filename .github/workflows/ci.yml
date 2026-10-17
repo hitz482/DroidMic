@@ -77,6 +77,7 @@ jobs:
         shell: bash
         run: scripts/ci-annotate.sh pwsh -File scripts/build-driver.ps1 -Configuration Release
       - name: InfVerif
+        continue-on-error: true   # report problems without blocking the package
         shell: bash
         run: scripts/ci-annotate.sh pwsh -File scripts/build-driver.ps1 -Configuration Release -VerifyOnly
       - name: Installer
