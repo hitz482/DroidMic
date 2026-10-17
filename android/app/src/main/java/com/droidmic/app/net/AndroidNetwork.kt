@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.withContext
 import java.net.Inet4Address
 import java.net.InetAddress
+import java.net.NetworkInterface
 
 enum class LinkType { WIFI, USB_TETHER, ETHERNET, OTHER, NONE }
 
@@ -36,30 +37,31 @@ class AndroidNetwork(private val context: Context) {
         }
     }
 
-    private fun subnetBroadcasts(): List<InetAddress> =
-        cm.allNetworksCompat().mapNotNull { cm.getLinkProperties(it) }.flatMap { lp ->
-            lp.linkAddresses.mapNotNull { la ->
-                val a = la.address as? Inet4Address ?: return@mapNotNull null
-                val prefix = la.prefixLength
-                if (prefix !in 8..30) return@mapNotNull null
-                val ip = a.address.fold(0) { acc, b -> (acc shl 8) or (b.toInt() and 0xFF) }
-                val mask = -1 shl (32 - prefix)
-                val bcast = ip or mask.inv()
-                InetAddress.getByAddress(byteArrayOf((bcast ushr 24).toByte(), (bcast ushr 16).toByte(), (bcast ushr 8).toByte(), bcast.toByte()))
-            }
-        }
+    /**
+     * Directed broadcast address of every up IPv4 interface. java.net is used because the
+     * USB-tethering interface (rndis/ncm) is not exposed as a ConnectivityManager Network.
+     */
+    private fun subnetBroadcasts(): List<InetAddress> = try {
+        NetworkInterface.getNetworkInterfaces().toList()
+            .filter { it.isUp && !it.isLoopback }
+            .flatMap { nic -> nic.interfaceAddresses.mapNotNull { it.broadcast } }
+            .distinct()
+    } catch (e: Exception) {
+        emptyList()
+    }
 
-    @Suppress("DEPRECATION") // allNetworks is the only way to see the USB tether interface alongside Wi-Fi.
-    private fun ConnectivityManager.allNetworksCompat(): List<Network> = allNetworks.toList()
+    /** IPv4 address of an active USB tethering interface, if any. */
+    private fun usbTetherAddress(): String? = try {
+        NetworkInterface.getNetworkInterfaces().toList()
+            .filter { it.isUp && (it.name.startsWith("rndis") || it.name.startsWith("ncm") || it.name.startsWith("usb")) }
+            .flatMap { it.inetAddresses.toList() }
+            .firstOrNull { it is Inet4Address }?.hostAddress
+    } catch (e: Exception) {
+        null
+    }
 
     fun currentStatus(): NetworkStatus {
-        // USB tethering shows up as a local link that is not the default network.
-        for (n in cm.allNetworksCompat()) {
-            val lp = cm.getLinkProperties(n) ?: continue
-            if (lp.interfaceName?.startsWith("rndis") == true || lp.interfaceName?.startsWith("usb") == true || lp.interfaceName?.startsWith("ncm") == true) {
-                return NetworkStatus(LinkType.USB_TETHER, "USB tethering", ipv4(lp))
-            }
-        }
+        usbTetherAddress()?.let { return NetworkStatus(LinkType.USB_TETHER, "USB tethering", it) }
         val active = cm.activeNetwork ?: return NetworkStatus(LinkType.NONE, "No network", null)
         val caps = cm.getNetworkCapabilities(active)
         val lp = cm.getLinkProperties(active)

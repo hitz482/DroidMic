@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  core-and-interop:
+    name: Protocol, audio engine and Kotlin<->C# interop (Linux)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: .NET unit and integration tests
+        run: dotnet test windows/tests/DroidMic.Tests -c Release --logger "trx;LogFileName=dotnet.trx"
+      - name: Kotlin core unit tests
+        working-directory: android
+        run: ./gradlew -PcoreOnly=true :core:test --console=plain
+      - name: Driver ring buffer tests
+        run: cc -std=c99 -Wall -Wextra -Werror -o ringbuffer_test driver/tests/ringbuffer_test.c && ./ringbuffer_test
+      - name: Interop (pairing, encryption, audio content)
+        run: scripts/interop-test.sh
+      - name: Interop (reconnect after PC loss)
+        run: scripts/interop-reconnect-test.sh
+
+  android:
+    name: Android APK
+    runs-on: ubuntu-24.04
+    needs: core-and-interop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+      - name: Build debug APK and run unit tests
+        working-directory: android
+        run: ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug --console=plain
+      - uses: actions/upload-artifact@v4
+        with:
+          name: droidmic-android-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-lint-report
+          path: android/app/build/reports/lint-results-debug.html
+
+  windows:
+    name: Windows app, driver and installer
+    runs-on: windows-2022
+    needs: core-and-interop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: microsoft/setup-msbuild@v2
+      - name: Desktop app and tools
+        shell: pwsh
+        run: ./scripts/build-windows.ps1 -Configuration Release
+      - name: Virtual audio driver (WDK, test-signed)
+        shell: pwsh
+        run: ./scripts/build-driver.ps1 -Configuration Release
+      - name: InfVerif
+        shell: pwsh
+        run: ./scripts/build-driver.ps1 -Configuration Release -VerifyOnly
+      - name: Installer
+        shell: pwsh
+        run: ./scripts/package-release.ps1 -SkipBuild
+      - uses: actions/upload-artifact@v4
+        with:
+          name: droidmic-windows
+          path: dist/*
