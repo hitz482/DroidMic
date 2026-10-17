@@ -49,7 +49,8 @@ internal sealed class ClientSession : IDisposable
             }
         }
         catch (Exception) { /* best effort */ }
-        _cts.Cancel();
+        // Abort can race with the session ending on its own; both paths only cancel and close.
+        try { _cts.Cancel(); } catch (ObjectDisposedException) { }
         _client.Close();
     }
 
@@ -322,11 +323,11 @@ internal sealed class ClientSession : IDisposable
         return clean.Length == 0 ? "Android device" : clean;
     }
 
+    // _cts and _writeLock are deliberately not disposed: Abort() may still touch them from
+    // another thread, and neither holds unmanaged resources in the way they are used here.
     public void Dispose()
     {
-        _cts.Cancel();
+        try { _cts.Cancel(); } catch (ObjectDisposedException) { }
         _client.Dispose();
-        _cts.Dispose();
-        _writeLock.Dispose();
     }
 }
