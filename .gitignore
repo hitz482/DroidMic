@@ -1,0 +1,24 @@
+# .NET
+bin/
+obj/
+*.user
+.vs/
+TestResults/
+# Gradle / Android
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+captures/
+*.keystore
+*.jks
+# Driver build output
+driver/**/x64/
+driver/**/ARM64/
+driver/**/Debug/
+driver/**/Release/
+*.cer
+*.pfx
+# Release output
+dist/

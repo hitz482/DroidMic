@@ -1,0 +1,45 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DroidMic.Protocol", "DroidMic.Protocol\DroidMic.Protocol.csproj", "{58BAB876-954C-4819-BF32-E1E9B8521AE9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DroidMic.AudioEngine", "DroidMic.AudioEngine\DroidMic.AudioEngine.csproj", "{844BA3A2-22A3-4861-84F1-63C9851FDBA1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DroidMic.Networking", "DroidMic.Networking\DroidMic.Networking.csproj", "{2A56F562-341B-4C38-973A-A0328B5CBBFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{9A4EF956-D6B6-4340-B117-BDD3C4BC4102}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DroidMic.Tests", "tests\DroidMic.Tests\DroidMic.Tests.csproj", "{0E990F26-72A5-4D88-BD40-B2583BCAA41E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{58BAB876-954C-4819-BF32-E1E9B8521AE9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58BAB876-954C-4819-BF32-E1E9B8521AE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58BAB876-954C-4819-BF32-E1E9B8521AE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58BAB876-954C-4819-BF32-E1E9B8521AE9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{844BA3A2-22A3-4861-84F1-63C9851FDBA1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{844BA3A2-22A3-4861-84F1-63C9851FDBA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{844BA3A2-22A3-4861-84F1-63C9851FDBA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{844BA3A2-22A3-4861-84F1-63C9851FDBA1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2A56F562-341B-4C38-973A-A0328B5CBBFD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2A56F562-341B-4C38-973A-A0328B5CBBFD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2A56F562-341B-4C38-973A-A0328B5CBBFD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2A56F562-341B-4C38-973A-A0328B5CBBFD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0E990F26-72A5-4D88-BD40-B2583BCAA41E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0E990F26-72A5-4D88-BD40-B2583BCAA41E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0E990F26-72A5-4D88-BD40-B2583BCAA41E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0E990F26-72A5-4D88-BD40-B2583BCAA41E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0E990F26-72A5-4D88-BD40-B2583BCAA41E} = {9A4EF956-D6B6-4340-B117-BDD3C4BC4102}
+	EndGlobalSection
+EndGlobal
